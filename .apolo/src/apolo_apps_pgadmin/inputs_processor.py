@@ -81,7 +81,7 @@ class PgAdminAppChartValueProcessor(BaseChartValueProcessor[PgAdminAppInputs]):
                     "port": database.credentials.port,
                     "user": database.credentials.user,
                     "database": database.credentials.dbname,
-                    "readOnly": database.read_only,
+                    "readOnly": not database.allow_writes,
                     "passwordSecret": {
                         "name": app_secrets_name,
                         "key": database.credentials.password.key,

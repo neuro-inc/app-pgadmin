@@ -40,13 +40,14 @@ class PgAdminDatabase(AbstractAppFieldType):
             is_advanced_field=True,
         ).as_json_schema_extra(),
     )
-    read_only: bool = Field(
-        default=True,
+    allow_writes: bool = Field(
+        default=False,
         json_schema_extra=SchemaExtraMetadata(
-            title="Read Only",
-            description="Open every session read-only so that a query cannot "
-            "change data by mistake. A user can still turn it off with SET; "
-            "for enforced read-only access use a read-only database user.",
+            title="Allow Writes",
+            description="Sessions are read-only unless this is on, so that a "
+            "query cannot change data by mistake. A user can still turn "
+            "read-only off with SET; for enforced read-only access use a "
+            "read-only database user.",
         ).as_json_schema_extra(),
     )
 

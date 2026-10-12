@@ -23,7 +23,7 @@
 | `networking` | Ingress and its authentication. An ingress without authentication is rejected. |
 | `databases[].credentials` | A user of a PostgreSQL application in the project, picked as an integration. |
 | `databases[].display_name` | Name of the server in pgAdmin, the database name by default. |
-| `databases[].read_only` | Open sessions with `default_transaction_read_only=on`, on by default. |
+| `databases[].allow_writes` | Off by default: sessions open with `default_transaction_read_only=on`. |
 
 ## How it works
 
@@ -31,7 +31,7 @@ pgAdmin runs in desktop mode: it has no login of its own, the platform ingress a
 
 pgAdmin keeps its own state (query history, preferences) on an `emptyDir` volume. It is reset on every restart, which is also how a changed list of databases is applied.
 
-The read-only switch protects against accidental writes, it is not a permission: a session can turn it off with `SET`. Enforced read-only access needs a read-only database user.
+Read-only sessions protect against accidental writes; they are not a permission: a session can turn it off with `SET`. Enforced read-only access needs a read-only database user.
 
 ## Outputs
 
