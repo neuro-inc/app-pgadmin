@@ -22,7 +22,7 @@
     Run SQL in the Query Tool, browse tables and schemas, export results to CSV.
     Sessions are read-only by default.
   pub_date: "2026-10-12T00:00:00+00:00"
-  logo: https://storage.googleapis.com/development-421920-assets/app-logos/pgadmin.svg
+  logo: https://storage.googleapis.com/development-421920-assets/app-logos/pgadmin.png
   changelog:
     file: ./CHANGELOG.md
   tags:
