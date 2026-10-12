@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pgadmin.fullname" . }}
+  labels:
+    {{- include "pgadmin.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "pgadmin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pgadmin.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5050
+        runAsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: pgpass
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/usr/local/bin/python3", "/config/pgpass.py"]
+          env:
+            {{- range $index, $server := .Values.servers }}
+            - name: SERVER_PASSWORD_{{ add1 $index }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $server.passwordSecret.name }}
+                  key: {{ $server.passwordSecret.key }}
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: pgpass
+              mountPath: /pgpass
+      containers:
+        - name: pgadmin
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGADMIN_CONFIG_SERVER_MODE
+              value: "False"
+            - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
+              value: "False"
+            - name: PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED
+              value: "False"
+            - name: PGADMIN_CONFIG_PROXY_X_FOR_COUNT
+              value: "1"
+            - name: PGADMIN_CONFIG_PROXY_X_PROTO_COUNT
+              value: "1"
+            - name: PGADMIN_CONFIG_PROXY_X_HOST_COUNT
+              value: "1"
+            - name: PGADMIN_DEFAULT_EMAIL
+              value: pgadmin@apolo.us
+            - name: PGADMIN_DEFAULT_PASSWORD
+              value: desktop-mode-has-no-login
+            - name: PGADMIN_SERVER_JSON_FILE
+              value: /config/servers.json
+            - name: PGADMIN_LISTEN_PORT
+              value: "5050"
+            - name: PGADMIN_DISABLE_POSTFIX
+              value: "1"
+          ports:
+            - name: http
+              containerPort: 5050
+          startupProbe:
+            httpGet:
+              path: /misc/ping
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /misc/ping
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /misc/ping
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: pgpass
+              mountPath: /pgpass
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/pgadmin
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "pgadmin.fullname" . }}
+        - name: pgpass
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
+        - name: data
+          emptyDir:
+            sizeLimit: 1Gi

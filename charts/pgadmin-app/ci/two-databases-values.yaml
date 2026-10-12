@@ -1,0 +1,32 @@
+apolo_app_id: 0a1b2c3d4e5f
+fullnameOverride: pgadmin-0a1b2c3d4e5f
+resources:
+  requests: {cpu: 500m, memory: 512M}
+  limits: {cpu: 500m, memory: 512M}
+podLabels:
+  platform.apolo.us/component: app
+  platform.apolo.us/preset: cpu-small
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: platform-platform-control-plane-ingress-auth@kubernetescrd
+  hosts:
+    - host: pgadmin--0a1b2c3d4e5f.apps.example.org.apolo.us
+      paths:
+        - {path: /, pathType: Prefix, portName: http}
+servers:
+  - name: shop
+    host: pg-0a1b-primary.project
+    port: 5432
+    user: shop
+    database: shop
+    readOnly: true
+    passwordSecret: {name: apps-secrets, key: pg-0a1b-shop-password}
+  - name: CRM
+    host: pg-2c3d-primary.project
+    port: 5432
+    user: crm
+    database: crm
+    readOnly: false
+    passwordSecret: {name: apps-secrets, key: pg-2c3d-crm-password}

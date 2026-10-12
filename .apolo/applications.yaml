@@ -1,0 +1,35 @@
+- app_type: pgadmin
+  name: pgadmin
+  title: pgAdmin
+  install_type: workflow
+  helm_path: charts/pgadmin-app
+  app_package_name: apolo_apps_pgadmin
+  inputs:
+    schema_path: .apolo/src/apolo_apps_pgadmin/schemas/PgAdminAppInputs.json
+    types_name: PgAdminAppInputs
+    processor: PgAdminAppChartValueProcessor
+    image: ghcr.io/neuro-inc/app-pgadmin
+  outputs:
+    schema_path: .apolo/src/apolo_apps_pgadmin/schemas/PgAdminAppOutputs.json
+    types_name: PgAdminAppOutputs
+    processor: PgAdminAppOutputProcessor
+    image: ghcr.io/neuro-inc/app-pgadmin
+  short_description: Query your PostgreSQL databases from the browser
+  description: |
+    pgAdmin is the web interface for PostgreSQL. Pick PostgreSQL applications of the
+    project and query them in the browser: no passwords to copy, no port-forward.
+
+    Run SQL in the Query Tool, browse tables and schemas, export results to CSV.
+    Sessions are read-only by default.
+  pub_date: "2026-10-12T00:00:00+00:00"
+  logo: https://storage.googleapis.com/development-421920-assets/app-logos/pgadmin.svg
+  changelog:
+    file: ./CHANGELOG.md
+  tags:
+    - "PostgreSQL"
+    - "Database"
+    - "SQL"
+  urls:
+    - name: pgAdmin documentation
+      type: documentation
+      url: https://www.pgadmin.org/docs/pgadmin4/latest/index.html
