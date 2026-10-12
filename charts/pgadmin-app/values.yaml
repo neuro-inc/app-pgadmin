@@ -1,0 +1,25 @@
+image:
+  repository: dpage/pgadmin4
+  tag: "9.18.0"
+  pullPolicy: IfNotPresent
+
+fullnameOverride: ""
+
+labels:
+  application: pgadmin
+
+podLabels: {}
+
+resources: {}
+tolerations: []
+affinity: {}
+
+serverGroup: Databases
+
+ingress:
+  enabled: false
+  className: traefik
+  annotations: {}
+  hosts: []
+
+servers: []

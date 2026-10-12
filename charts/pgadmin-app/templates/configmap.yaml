@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pgadmin.fullname" . }}
+  labels:
+    {{- include "pgadmin.labels" . | nindent 4 }}
+data:
+  servers.json: |
+    {{- include "pgadmin.servers" . | nindent 4 }}
+  pgpass.py: |
+    import json
+    import os
+    import sys
+
+
+    def escape(value):
+        return str(value).replace("\\", "\\\\").replace(":", "\\:")
+
+
+    with open("/config/servers.json") as servers_file:
+        servers = json.load(servers_file)["Servers"]
+
+    descriptor = os.open("/pgpass/pgpass", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w") as pgpass:
+        for key, server in servers.items():
+            fields = (
+                server["Host"],
+                server["Port"],
+                "*",
+                server["Username"],
+                os.environ[f"SERVER_PASSWORD_{key}"],
+            )
+            if any("\n" in str(field) or "\r" in str(field) for field in fields):
+                sys.exit(f"Server {key}: a line break in the host, user or password")
+            pgpass.write(":".join(escape(field) for field in fields) + "\n")
