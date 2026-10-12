@@ -29,10 +29,12 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
   "Host" $server.host
   "Port" (int $server.port)
   "MaintenanceDB" $server.database
-  "DBRestriction" $server.database
   "Username" $server.user
   "ConnectionParameters" $parameters
 ) -}}
+{{- if not (contains "," $server.database) -}}
+{{- $_ := set (get $servers (toString (add1 $index))) "DBRestriction" $server.database -}}
+{{- end -}}
 {{- end -}}
 {{- dict "Servers" $servers | toPrettyJson -}}
 {{- end -}}

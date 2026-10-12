@@ -10,6 +10,7 @@ data:
   pgpass.py: |
     import json
     import os
+    import sys
 
 
     def escape(value):
@@ -29,4 +30,6 @@ data:
                 server["Username"],
                 os.environ[f"SERVER_PASSWORD_{key}"],
             )
+            if any("\n" in str(field) or "\r" in str(field) for field in fields):
+                sys.exit(f"Server {key}: a line break in the host, user or password")
             pgpass.write(":".join(escape(field) for field in fields) + "\n")

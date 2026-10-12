@@ -39,8 +39,8 @@ spec:
             - name: SERVER_PASSWORD_{{ add1 $index }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ $server.passwordSecret.name }}
-                  key: {{ $server.passwordSecret.key }}
+                  name: {{ $server.passwordSecret.name | quote }}
+                  key: {{ $server.passwordSecret.key | quote }}
             {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

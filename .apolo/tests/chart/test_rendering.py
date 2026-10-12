@@ -109,24 +109,21 @@ async def test_release(setup_clients, inputs, tmp_path):
     assert container["resources"] == values["resources"]
 
 
-def test_pgpass_escaping(tmp_path):
-    manifests = render(
-        {
-            "fullnameOverride": "pgadmin-x",
-            "servers": [
-                {
-                    "name": "db",
-                    "host": "pg-primary",
-                    "port": 5432,
-                    "user": "us:er",
-                    "database": "db",
-                    "readOnly": True,
-                    "passwordSecret": {"name": "s", "key": "k"},
-                }
-            ],
-        },
-        tmp_path,
-    )
+def server(**overrides):
+    return {
+        "name": "db",
+        "host": "pg-primary",
+        "port": 5432,
+        "user": "user",
+        "database": "db",
+        "readOnly": True,
+        "passwordSecret": {"name": "s", "key": "k"},
+        **overrides,
+    }
+
+
+def run_pgpass(tmp_path, servers, passwords):
+    manifests = render({"fullnameOverride": "pgadmin-x", "servers": servers}, tmp_path)
     data = manifests[("ConfigMap", "pgadmin-x")]["data"]
     (tmp_path / "servers.json").write_text(data["servers.json"])
     script = (
@@ -134,14 +131,58 @@ def test_pgpass_escaping(tmp_path):
         .replace("/config/", f"{tmp_path}/")
         .replace("/pgpass/pgpass", str(tmp_path / "pgpass"))
     )
-
-    subprocess.run(  # noqa: S603
+    return subprocess.run(  # noqa: S603
         [shutil.which("python3"), "-c", script],
-        check=True,
-        env={"SERVER_PASSWORD_1": "p:a\\ss"},
+        check=False,
+        capture_output=True,
+        text=True,
+        env={
+            f"SERVER_PASSWORD_{index}": password
+            for index, password in enumerate(passwords, start=1)
+        },
     )
 
+
+def test_pgpass_escaping(tmp_path):
+    result = run_pgpass(tmp_path, [server(user="us:er")], ["p:a\\ss"])
+
+    assert result.returncode == 0
     assert (
         tmp_path / "pgpass"
     ).read_text() == "pg-primary:5432:*:us\\:er:p\\:a\\\\ss\n"
     assert (tmp_path / "pgpass").stat().st_mode & 0o777 == 0o600
+
+
+def test_pgpass_rejects_line_breaks(tmp_path):
+    result = run_pgpass(tmp_path, [server()], ["first\nsecond"])
+
+    assert result.returncode == 1
+    assert "Server 1: a line break" in result.stderr
+    assert "first" not in result.stderr
+
+
+def test_secret_reference_stays_a_string(tmp_path):
+    manifests = render(
+        {
+            "fullnameOverride": "pgadmin-x",
+            "servers": [server(passwordSecret={"name": "123", "key": "true"})],
+        },
+        tmp_path,
+    )
+    pod = manifests[("Deployment", "pgadmin-x")]["spec"]["template"]["spec"]
+
+    assert pod["initContainers"][0]["env"][0]["valueFrom"]["secretKeyRef"] == {
+        "name": "123",
+        "key": "true",
+    }
+
+
+def test_database_with_comma_is_not_restricted(tmp_path):
+    manifests = render(
+        {"fullnameOverride": "pgadmin-x", "servers": [server(database="a,b")]},
+        tmp_path,
+    )
+    servers = json.loads(manifests[("ConfigMap", "pgadmin-x")]["data"]["servers.json"])
+
+    assert "DBRestriction" not in servers["Servers"]["1"]
+    assert servers["Servers"]["1"]["MaintenanceDB"] == "a,b"
