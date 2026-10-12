@@ -308,15 +308,15 @@
           "x-meta-type": "inline",
           "x-title": "Display Name"
         },
-        "read_only": {
-          "default": true,
-          "title": "Read Only",
+        "allow_writes": {
+          "default": false,
+          "title": "Allow Writes",
           "type": "boolean",
-          "x-description": "Open every session read-only so that a query cannot change data by mistake. A user can still turn it off with SET; for enforced read-only access use a read-only database user.",
+          "x-description": "Sessions are read-only unless this is on, so that a query cannot change data by mistake. A user can still turn read-only off with SET; for enforced read-only access use a read-only database user.",
           "x-is-advanced-field": false,
           "x-is-configurable": true,
           "x-meta-type": "inline",
-          "x-title": "Read Only"
+          "x-title": "Allow Writes"
         }
       },
       "required": [

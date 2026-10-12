@@ -54,7 +54,7 @@ def inputs():
             PgAdminDatabase(
                 credentials=credentials("crm", "crm", cluster="pg-2c3d"),
                 display_name="CRM",
-                read_only=False,
+                allow_writes=True,
             ),
         ],
     )
